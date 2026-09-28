@@ -1,7 +1,9 @@
 <p align="center">
-  <h1 align="center">nestjs-kafka-transport</h1>
-  <p align="center">Kafka for NestJS microservices, without kafkajs.</p>
+  <img src="./.github/assets/cover.png" alt="nestjs-kafka-transport: Kafka for NestJS microservices, without kafkajs" width="100%">
 </p>
+
+<h1 align="center">nestjs-kafka-transport</h1>
+<p align="center">Kafka for NestJS microservices, without kafkajs.</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/nestjs-kafka-transport"><img alt="npm" src="https://img.shields.io/npm/v/nestjs-kafka-transport.svg"></a>

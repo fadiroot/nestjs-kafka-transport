@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1020"/>
+      <stop offset="1" stop-color="#151b33"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e0234e"/>
+      <stop offset="1" stop-color="#ff7a59"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g stroke="#26305a" stroke-width="1" opacity="0.6">
+    <path d="M0 105 H1200 M0 210 H1200 M0 315 H1200 M0 420 H1200 M0 525 H1200"/>
+    <path d="M150 0 V630 M300 0 V630 M450 0 V630 M600 0 V630 M750 0 V630 M900 0 V630 M1050 0 V630"/>
+  </g>
+  <rect x="0" y="0" width="1200" height="8" fill="url(#accent)"/>
+  <text x="70" y="120" font-family="Inter, Helvetica, Arial, sans-serif" font-size="30" font-weight="600" fill="#9aa5d1" letter-spacing="2">NESTJS MICROSERVICES</text>
+  <text x="70" y="200" font-family="Inter, Helvetica, Arial, sans-serif" font-size="66" font-weight="800" fill="#ffffff">Kafka without kafkajs.</text>
+  <text x="70" y="262" font-family="Inter, Helvetica, Arial, sans-serif" font-size="34" font-weight="500" fill="#c9d1f2">A drop-in transport on @platformatic/kafka, wire-compatible</text>
+  <text x="70" y="306" font-family="Inter, Helvetica, Arial, sans-serif" font-size="34" font-weight="500" fill="#c9d1f2">with the built-in one. Migrate one service at a time.</text>
+  <rect x="70" y="350" width="1060" height="150" rx="14" fill="#0a0e1c" stroke="#2a3563"/>
+  <text font-family="JetBrains Mono, SFMono-Regular, Menlo, monospace" font-size="24" fill="#e6e9f5">
+    <tspan x="100" y="395"><tspan fill="#7c8cff">const</tspan> app = <tspan fill="#7c8cff">await</tspan> NestFactory.createMicroservice(AppModule, {</tspan>
+    <tspan x="100" y="430">  strategy: <tspan fill="#7c8cff">new</tspan> <tspan fill="#ffb86c">KafkaTransportServer</tspan>({ client, consumer }),</tspan>
+    <tspan x="100" y="465">});  <tspan fill="#6b7597">// same @MessagePattern, same KafkaContext, same headers</tspan></tspan>
+  </text>
+  <g font-family="Inter, Helvetica, Arial, sans-serif" font-size="22" font-weight="600">
+    <rect x="70" y="540" width="250" height="44" rx="22" fill="#1b2344" stroke="#2f3b6e"/>
+    <text x="195" y="569" text-anchor="middle" fill="#dfe4ff">request-reply ✓</text>
+    <rect x="335" y="540" width="270" height="44" rx="22" fill="#1b2344" stroke="#2f3b6e"/>
+    <text x="470" y="569" text-anchor="middle" fill="#dfe4ff">kafkajs interop ✓</text>
+    <rect x="620" y="540" width="250" height="44" rx="22" fill="#1b2344" stroke="#2f3b6e"/>
+    <text x="745" y="569" text-anchor="middle" fill="#dfe4ff">typed, no any ✓</text>
+    <rect x="885" y="540" width="245" height="44" rx="22" fill="#1b2344" stroke="#2f3b6e"/>
+    <text x="1007" y="569" text-anchor="middle" fill="#dfe4ff">Node 22 / 24 ✓</text>
+  </g>
+  <text x="1130" y="120" text-anchor="end" font-family="JetBrains Mono, Menlo, monospace" font-size="26" fill="#ff7a59">npm i nestjs-kafka-transport</text>
+</svg>
