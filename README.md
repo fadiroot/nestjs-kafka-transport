@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./.github/assets/cover.png" alt="nestjs-kafka-transport: Kafka for NestJS microservices, without kafkajs" width="100%">
+  <img src="https://raw.githubusercontent.com/fadiroot/nestjs-kafka-transport/main/.github/assets/cover.png" alt="nestjs-kafka-transport: Kafka for NestJS microservices, without kafkajs" width="100%">
 </p>
 
 <h1 align="center">nestjs-kafka-transport</h1>
