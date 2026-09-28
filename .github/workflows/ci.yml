@@ -27,12 +27,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm format
-      - run: pnpm test:coverage
-      - uses: codecov/codecov-action@v4
-        if: matrix.node == 24
-        with:
-          files: coverage/lcov.info
-        continue-on-error: true
+      - run: pnpm test
       - run: pnpm build
 
   e2e:
@@ -70,6 +65,12 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm test:e2e
+      # Coverage is measured over unit + e2e: the server and client are exercised by e2e only.
+      - run: pnpm test:coverage
         env:
           KAFKA_BROKERS: localhost:9092
+      - uses: codecov/codecov-action@v4
+        if: matrix.node == 24 && matrix.kafka == '3.9.1'
+        with:
+          files: coverage/lcov.info
+        continue-on-error: true
