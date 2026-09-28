@@ -1,6 +1,6 @@
 {
   "name": "nestjs-kafka-transport",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Production-grade Kafka transport for NestJS microservices built on @platformatic/kafka: drop-in replacement for the built-in kafkajs transport with request-reply, retries, dead-letter topics and batches.",
   "keywords": [
     "nestjs",
