@@ -23,19 +23,21 @@ It is a **drop-in replacement** for the built-in Kafka transport: same decorator
 
 ## Features
 
-|                                                                                         | built-in kafkajs transport | nestjs-kafka-transport |
-| --------------------------------------------------------------------------------------- | -------------------------- | ---------------------- |
-| `@MessagePattern` request-reply, `@EventPattern` events                                 | ✅                         | ✅ wire-compatible     |
-| `KafkaContext` (`getMessage`, `getTopic`, `getPartition`, `getConsumer`, `getProducer`) | ✅                         | ✅                     |
-| `KafkaRetriableException` redelivery                                                    | ✅                         | ✅                     |
-| Custom serializers / deserializers, Schema Registry passthrough                         | ✅                         | ✅                     |
-| Maintained client, Node 22/24, Kafka 3.x and 4.x (KRaft)                                | ❌                         | ✅                     |
-| Typed options, no `any` in the public API                                               | partial                    | ✅                     |
-| Retry policy with backoff, dead-letter topics (`kafka_dlt-*` headers)                   | ❌                         | v0.2                   |
-| Manual commits and at-least-once semantics                                              | partial                    | v0.2                   |
-| Terminus health indicator (broker reachability, consumer lag)                           | ❌                         | v0.2                   |
-| Batch consumption with per-partition ordering                                           | ❌                         | v0.3                   |
-| Prometheus metrics, OpenTelemetry spans                                                 | ❌                         | v0.3                   |
+|                                                                                         | built-in kafkajs transport | nestjs-kafka-transport      |
+| --------------------------------------------------------------------------------------- | -------------------------- | --------------------------- |
+| `@MessagePattern` request-reply, `@EventPattern` events                                 | ✅                         | ✅ wire-compatible          |
+| `KafkaContext` (`getMessage`, `getTopic`, `getPartition`, `getConsumer`, `getProducer`) | ✅                         | ✅                          |
+| `KafkaRetriableException` redelivery                                                    | ✅                         | ✅ with exponential backoff |
+| Interoperates with services on the kafkajs transport (tested both directions)           | –                          | ✅                          |
+| Numbers, booleans and `null` keep their type end to end                                 | ❌ (strings)               | ✅                          |
+| Custom serializers / deserializers, Schema Registry passthrough                         | ✅                         | ✅                          |
+| Maintained client, Node 22/24, Kafka 3.x and 4.x (KRaft)                                | ❌                         | ✅                          |
+| Typed options, no `any` in the public API                                               | partial                    | ✅                          |
+| Retry policy with backoff, dead-letter topics (`kafka_dlt-*` headers)                   | ❌                         | v0.2                        |
+| Manual commits and at-least-once semantics                                              | partial                    | v0.2                        |
+| Terminus health indicator (broker reachability, consumer lag)                           | ❌                         | v0.2                        |
+| Batch consumption with per-partition ordering                                           | ❌                         | v0.3                        |
+| Prometheus metrics, OpenTelemetry spans                                                 | ❌                         | v0.3                        |
 
 ## Install
 
