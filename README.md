@@ -103,13 +103,12 @@ Replace `transport: Transport.KAFKA, options: {...}` with `strategy: new KafkaTr
 ## Documentation
 
 - [Getting started](./docs/getting-started.md)
-- [Migration from the kafkajs transport](./docs/migration.md)
-- [Request-reply](./docs/request-reply.md) · [Events](./docs/events.md)
+- [Migrating from the built-in kafkajs transport](./docs/migration.md) (option-by-option table)
 - [Configuration reference](./docs/configuration.md)
-- [Delivery guarantees, commits and retries](./docs/delivery.md)
-- [Observability](./docs/observability.md) · [Health checks](./docs/health.md)
+- [Delivery guarantees, commits, retries and request-reply internals](./docs/delivery.md)
 - [Troubleshooting](./docs/troubleshooting.md)
-- [API reference](https://fadiroot.github.io/nestjs-kafka-transport/api/)
+- [Roadmap](./docs/roadmap.md)
+- [Basic example](./examples/basic)
 
 ## Status
 
