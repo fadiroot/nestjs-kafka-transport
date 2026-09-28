@@ -1,0 +1,94 @@
+{
+  "name": "nestjs-kafka-transport",
+  "version": "0.0.0",
+  "description": "Production-grade Kafka transport for NestJS microservices built on @platformatic/kafka: drop-in replacement for the built-in kafkajs transport with request-reply, retries, dead-letter topics and batches.",
+  "keywords": [
+    "nestjs",
+    "nest",
+    "kafka",
+    "microservices",
+    "transport",
+    "platformatic",
+    "kafkajs",
+    "message-broker",
+    "event-driven"
+  ],
+  "license": "MIT",
+  "author": "Fadi Romdhan <fadiromdhan3@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fadiroot/nestjs-kafka-transport.git"
+  },
+  "homepage": "https://github.com/fadiroot/nestjs-kafka-transport#readme",
+  "bugs": {
+    "url": "https://github.com/fadiroot/nestjs-kafka-transport/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "packageManager": "pnpm@10.34.5",
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "test": "vitest run --project unit",
+    "test:e2e": "vitest run --project e2e",
+    "test:all": "vitest run",
+    "test:coverage": "vitest run --project unit --coverage",
+    "docs:api": "typedoc",
+    "changeset": "changeset",
+    "release": "pnpm build && changeset publish",
+    "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm test && pnpm build"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.0.0 || ^11.0.0",
+    "@nestjs/core": "^10.0.0 || ^11.0.0",
+    "@nestjs/microservices": "^10.0.0 || ^11.0.0",
+    "@platformatic/kafka": "^2.12.0",
+    "rxjs": "^7.8.0"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
+    "@eslint/js": "^10.0.1",
+    "@nestjs/common": "^11.2.6",
+    "@nestjs/core": "^11.2.6",
+    "@nestjs/microservices": "^11.2.6",
+    "@nestjs/testing": "^11.2.6",
+    "@platformatic/kafka": "^2.12.1",
+    "@types/node": "^24.19.0",
+    "@vitest/coverage-v8": "^5.0.2",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "kafkajs": "^2.2.4",
+    "prettier": "^3.9.9",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "tsup": "^8.5.1",
+    "typedoc": "^0.28.20",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^5.0.2"
+  }
+}

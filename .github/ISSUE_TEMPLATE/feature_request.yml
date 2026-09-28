@@ -1,0 +1,16 @@
+name: Feature request
+description: Propose an addition or a change
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What can you not do today, and in which kind of system?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: API sketch, option name, or behaviour you expect. Mention how the built-in kafkajs transport or other libraries handle it.

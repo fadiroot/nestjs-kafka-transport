@@ -1,0 +1,29 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug, triage]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead. Include the smallest handler/client code that reproduces it.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: nestjs-kafka-transport version
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Environment
+      placeholder: Node 24.x · @nestjs/microservices 11.x · @platformatic/kafka 2.12.x · Kafka 3.9 / Redpanda / MSK
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      render: shell
