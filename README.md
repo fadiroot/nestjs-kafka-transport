@@ -32,6 +32,7 @@ It is a **drop-in replacement** for the built-in Kafka transport: same decorator
 | `KafkaRetriableException` redelivery                                                    | ✅                         | ✅ with exponential backoff |
 | Interoperates with services on the kafkajs transport (tested both directions)           | –                          | ✅                          |
 | Numbers, booleans and `null` keep their type end to end                                 | ❌ (strings)               | ✅                          |
+| Lost-reply detection (`KafkaReplyLostError`) and operation ids for idempotent retries   | ❌ (timeouts only)         | ✅                          |
 | Custom serializers / deserializers, Schema Registry passthrough                         | ✅                         | ✅                          |
 | Maintained client, Node 22/24, Kafka 3.x and 4.x (KRaft)                                | ❌                         | ✅                          |
 | Typed options, no `any` in the public API                                               | partial                    | ✅                          |

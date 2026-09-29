@@ -46,11 +46,24 @@ All options are typed (`KafkaTransportOptions`) and documented inline; your edit
 
 ## Transport-level
 
-| Option                        | Type                               | Default               | Description                                             |
-| ----------------------------- | ---------------------------------- | --------------------- | ------------------------------------------------------- |
-| `postfixId`                   | string                             | `-server` / `-client` | suffix for `clientId` and `groupId`                     |
-| `serializer` / `deserializer` | Nest `Serializer` / `Deserializer` | –                     | same contract as the built-in transport                 |
-| `parser.keepBinary`           | boolean                            | false                 | leave record values as `Buffer`                         |
-| `producerOnlyMode`            | boolean                            | false                 | client without consumer (`send()` unavailable)          |
-| `retriableAttempts`           | number                             | 3                     | server: in-process re-runs on `KafkaRetriableException` |
-| `retriableDelay`              | ms                                 | 200                   | server: first retry delay, doubles each time            |
+| Option                        | Type                               | Default               | Description                                                                                            |
+| ----------------------------- | ---------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------ |
+| `postfixId`                   | string                             | `-server` / `-client` | suffix for `clientId` and `groupId`                                                                    |
+| `serializer` / `deserializer` | Nest `Serializer` / `Deserializer` | –                     | same contract as the built-in transport                                                                |
+| `parser.keepBinary`           | boolean                            | false                 | leave record values as `Buffer`                                                                        |
+| `producerOnlyMode`            | boolean                            | false                 | client without consumer (`send()` unavailable)                                                         |
+| `retriableAttempts`           | number                             | 3                     | server: in-process re-runs on `KafkaRetriableException`                                                |
+| `retriableDelay`              | ms                                 | 200                   | server: first retry delay, doubles each time                                                           |
+| `requestTimeout`              | ms                                 | –                     | client: deadline for the first reply of `send()`; past it the request fails with `KafkaReplyLostError` |
+| `generateOperationId`         | `() => string`                     | –                     | client: operation id for requests that pass none                                                       |
+
+## `send()` options (client)
+
+`client.send(pattern, data, options?)` accepts, on top of the built-in signature:
+
+| Option        | Type   | Description                                                                                                      |
+| ------------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
+| `operationId` | string | key of the logical operation, sent as `kafka_nest-operation-id`; reuse it on retries so handlers can deduplicate |
+| `timeout`     | ms     | deadline for the first reply of this request; overrides `requestTimeout`, `0` disables it                        |
+
+See [delivery.md](./delivery.md#lost-replies-telling-not-executed-from-unknown) for when a request fails with `KafkaReplyLostError` and how to retry safely.

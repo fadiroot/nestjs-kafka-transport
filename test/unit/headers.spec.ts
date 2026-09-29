@@ -12,6 +12,10 @@ describe('KafkaHeaders', () => {
     expect(KafkaHeaders.NEST_IS_DISPOSED).toBe('kafka_nest-is-disposed');
   });
 
+  it("namespaces this transport's own headers under kafka_nest-", () => {
+    expect(KafkaHeaders.OPERATION_ID).toBe('kafka_nest-operation-id');
+  });
+
   it('derives reply topics with the ".reply" suffix', () => {
     expect(REPLY_TOPIC_SUFFIX).toBe('.reply');
     expect(replyTopicOf('user.create')).toBe('user.create.reply');

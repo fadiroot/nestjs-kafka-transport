@@ -10,6 +10,8 @@ import {
 } from '@nestjs/microservices';
 import { Observable, from } from 'rxjs';
 
+import type { KafkaTransportContext } from '../../../src/index.js';
+
 export const received: { events: unknown[]; contexts: KafkaContext[]; retriable: number } = {
   events: [],
   contexts: [],
@@ -56,6 +58,20 @@ export class MathController {
   @MessagePattern(/^math\.sum\.sync\.regex\..+$/)
   sumRegex(@Payload() data: { numbers: number[] }): number {
     return data.numbers.reduce((a, b) => a + b, 0) * 10;
+  }
+
+  @MessagePattern('math.operation')
+  operation(
+    @Payload() _data: unknown,
+    @Ctx() ctx: KafkaTransportContext,
+  ): { operationId: string | null } {
+    return { operationId: ctx.getOperationId() ?? null };
+  }
+
+  @MessagePattern('math.slow')
+  async slow(@Payload() data: { ms: number }): Promise<string> {
+    await new Promise((resolve) => setTimeout(resolve, data.ms));
+    return 'late';
   }
 
   @EventPattern('notify')
