@@ -6,13 +6,14 @@ export type {
 export { KafkaTransportClient } from './client/kafka-transport.client.js';
 export type { KafkaTransportClientInstances } from './client/kafka-transport.client.js';
 export { replyPartitionAssigner } from './client/reply-partition-assigner.js';
-export { createKafkaContext } from './context/kafka.context.js';
+export { createKafkaContext, KafkaTransportContext } from './context/kafka.context.js';
 export type {
   KafkaTransportMessage,
   TransportConsumer,
   TransportProducer,
 } from './context/kafka.context.js';
 export type {
+  KafkaSendOptions,
   KafkaTransportConnectionOptions,
   KafkaTransportConsumerOptions,
   KafkaTransportOptions,
@@ -30,5 +31,7 @@ export {
   KafkaTransportError,
   KafkaTransportNotConnectedError,
   KafkaReplyTopicNotSubscribedError,
+  KafkaReplyLostError,
   KafkaRemoteHandlerError,
 } from './errors.js';
+export type { KafkaReplyLostReason } from './errors.js';
