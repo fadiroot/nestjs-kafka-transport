@@ -46,16 +46,19 @@ All options are typed (`KafkaTransportOptions`) and documented inline; your edit
 
 ## Transport-level
 
-| Option                        | Type                               | Default               | Description                                                                                            |
-| ----------------------------- | ---------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------ |
-| `postfixId`                   | string                             | `-server` / `-client` | suffix for `clientId` and `groupId`                                                                    |
-| `serializer` / `deserializer` | Nest `Serializer` / `Deserializer` | –                     | same contract as the built-in transport                                                                |
-| `parser.keepBinary`           | boolean                            | false                 | leave record values as `Buffer`                                                                        |
-| `producerOnlyMode`            | boolean                            | false                 | client without consumer (`send()` unavailable)                                                         |
-| `retriableAttempts`           | number                             | 3                     | server: in-process re-runs on `KafkaRetriableException`                                                |
-| `retriableDelay`              | ms                                 | 200                   | server: first retry delay, doubles each time                                                           |
-| `requestTimeout`              | ms                                 | –                     | client: deadline for the first reply of `send()`; past it the request fails with `KafkaReplyLostError` |
-| `generateOperationId`         | `() => string`                     | –                     | client: operation id for requests that pass none                                                       |
+| Option                         | Type                               | Default               | Description                                                                                            |
+| ------------------------------ | ---------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------ |
+| `postfixId`                    | string                             | `-server` / `-client` | suffix for `clientId` and `groupId`                                                                    |
+| `serializer` / `deserializer`  | Nest `Serializer` / `Deserializer` | –                     | same contract as the built-in transport                                                                |
+| `parser.keepBinary`            | boolean                            | false                 | leave record values as `Buffer`                                                                        |
+| `producerOnlyMode`             | boolean                            | false                 | client without consumer (`send()` unavailable)                                                         |
+| `retriableAttempts`            | number                             | 3                     | server: in-process re-runs on `KafkaRetriableException`                                                |
+| `retriableDelay`               | ms                                 | 200                   | server: first retry delay, doubles each time                                                           |
+| `commitMode`                   | `'auto' \| 'manual'`               | `'auto'`              | server: `'manual'` commits only when the handler calls `ctx.commit()`                                  |
+| `deadLetter.topic`             | string \| `(topic) => string`      | `'.dlq'`              | server: enables dead-lettering; suffix or naming function for the dead-letter topic                    |
+| `deadLetter.includeStackTrace` | boolean                            | false                 | server: add `kafka_dlt-exception-stacktrace` to dead letters                                           |
+| `requestTimeout`               | ms                                 | –                     | client: deadline for the first reply of `send()`; past it the request fails with `KafkaReplyLostError` |
+| `generateOperationId`          | `() => string`                     | –                     | client: operation id for requests that pass none                                                       |
 
 ## `send()` options (client)
 

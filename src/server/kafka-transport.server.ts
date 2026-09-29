@@ -21,6 +21,7 @@ import {
 } from '../context/kafka.context.js';
 import { KafkaTransportError, KafkaTransportNotConnectedError } from '../errors.js';
 import type { KafkaTransportOptions, KafkaTransportStatus } from '../interfaces/options.js';
+import { buildDeadLetterRecord } from '../wire/dead-letter.js';
 import { KafkaHeaders, REPLY_TOPIC_SUFFIX } from '../wire/headers.js';
 import { KafkaParser } from '../wire/parser.js';
 import { decodePayload, toWireRecord } from '../wire/serialize.js';
@@ -37,6 +38,9 @@ export interface KafkaTransportInstances {
 const DEFAULT_POSTFIX = '-server';
 const DEFAULT_RETRIABLE_ATTEMPTS = 3;
 const DEFAULT_RETRIABLE_DELAY = 200;
+
+/** Result of running a handler through the retry loop. */
+type HandlerOutcome = { ok: true } | { ok: false; error: unknown; attempts: number };
 
 /**
  * Kafka transport strategy for `@nestjs/microservices`, built on `@platformatic/kafka`.
@@ -280,14 +284,16 @@ export class KafkaTransportServer
     const handler = this.getHandlerByPattern(message.topic);
     if (!handler) {
       this.logger.warn(`No handler registered for topic "${message.topic}"`);
-      await this.commit(raw);
+      await this.commit(raw, true);
       return;
     }
 
     const correlationId = this.headerAsString(message, KafkaHeaders.CORRELATION_ID);
     const replyTopic = this.headerAsString(message, KafkaHeaders.REPLY_TOPIC);
     const replyPartition = this.headerAsString(message, KafkaHeaders.REPLY_PARTITION);
-    const context = createKafkaContext(message, consumer, producer);
+    const context = createKafkaContext(message, consumer, producer, async () => {
+      await raw.commit();
+    });
     // Same convention as the built-in KafkaRequestDeserializer: the record value is the payload,
     // unless a custom deserializer was configured.
     const data: unknown = this.options.deserializer
@@ -295,10 +301,13 @@ export class KafkaTransportServer
       : decodePayload(message);
 
     if (handler.isEventHandler || !correlationId || !replyTopic) {
-      await this.withRetries(
+      const outcome = await this.withRetries(
         () => this.handleEvent(message.topic, { pattern: message.topic, data }, context),
         this.describe(message),
       );
+      if (!outcome.ok) {
+        await this.deadLetter(message, outcome.error, outcome.attempts);
+      }
       await this.commit(raw);
       return;
     }
@@ -318,12 +327,43 @@ export class KafkaTransportServer
       await producer.send({ messages: [record] });
     };
 
-    await this.withRetries(async () => {
+    const outcome = await this.withRetries(async () => {
       const result: unknown = await this.runWithHooks(context, () => handler(data, context));
       const response$: Observable<unknown> = this.transformToObservable(result);
       await this.sendReplies(response$, respond);
     }, this.describe(message));
+    if (!outcome.ok && outcome.error instanceof KafkaRetriableException) {
+      // Retries exhausted: the caller got no reply. Keep the record for inspection.
+      await this.deadLetter(message, outcome.error, outcome.attempts);
+    }
     await this.commit(raw);
+  }
+
+  /**
+   * Copies a failed record to its dead-letter topic (when `deadLetter` is configured) with the
+   * `kafka_dlt-*` headers. A failure to produce it is logged; the source record is still
+   * committed so the partition does not stall.
+   */
+  protected async deadLetter(
+    message: KafkaTransportMessage,
+    error: unknown,
+    attempts: number,
+  ): Promise<void> {
+    const options = this.options.deadLetter;
+    const producer = this.producer;
+    if (!options || !producer) {
+      return;
+    }
+    const record = buildDeadLetterRecord(message, { error, attempts }, options);
+    try {
+      await producer.send({ messages: [record] });
+      this.logger.warn(`Dead-lettered ${this.describe(message)} to "${record.topic}"`);
+    } catch (produceError) {
+      this.logger.error(
+        `Could not dead-letter ${this.describe(message)} to "${record.topic}"`,
+        produceError instanceof Error ? produceError.stack : String(produceError),
+      );
+    }
   }
 
   /** `topic[partition]@offset`, for log lines. */
@@ -379,21 +419,24 @@ export class KafkaTransportServer
     });
   }
 
-  /** Re-runs `task` when it throws `KafkaRetriableException`, with exponential backoff. */
-  protected async withRetries(task: () => Promise<void>, label: string): Promise<void> {
+  /**
+   * Re-runs `task` when it throws `KafkaRetriableException`, with exponential backoff. Resolves
+   * with the final outcome; a failure is logged and never thrown.
+   */
+  protected async withRetries(task: () => Promise<void>, label: string): Promise<HandlerOutcome> {
     const attempts = this.options.retriableAttempts ?? DEFAULT_RETRIABLE_ATTEMPTS;
     let delay = this.options.retriableDelay ?? DEFAULT_RETRIABLE_DELAY;
     for (let attempt = 0; ; attempt++) {
       try {
         await task();
-        return;
+        return { ok: true };
       } catch (error) {
         if (!(error instanceof KafkaRetriableException) || attempt >= attempts) {
           this.logger.error(
             `Handler for ${label} failed${attempt > 0 ? ` after ${String(attempt + 1)} attempts` : ''}`,
             error instanceof Error ? error.stack : String(error),
           );
-          return;
+          return { ok: false, error, attempts: attempt + 1 };
         }
         await new Promise((r) => setTimeout(r, delay));
         delay *= 2;
@@ -433,8 +476,12 @@ export class KafkaTransportServer
     await consumer.metadata({ topics, autocreateTopics: true, forceUpdate: true });
   }
 
-  protected async commit(raw: Message<Buffer, Buffer, string>): Promise<void> {
-    if (this.options.consumer?.autocommit) {
+  /**
+   * Commits the record unless the consumer autocommits or `commitMode` is `'manual'`.
+   * `force` commits regardless of `commitMode` (records without a handler).
+   */
+  protected async commit(raw: Message<Buffer, Buffer, string>, force = false): Promise<void> {
+    if (this.options.consumer?.autocommit || (this.options.commitMode === 'manual' && !force)) {
       return;
     }
     try {

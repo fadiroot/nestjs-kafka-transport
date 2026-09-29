@@ -58,6 +58,23 @@ export function replyTopicOf(pattern: string): string {
   return `${pattern}${REPLY_TOPIC_SUFFIX}`;
 }
 
+/** Default suffix appended to a topic to name its dead-letter topic. */
+export const DEAD_LETTER_TOPIC_SUFFIX = '.dlq';
+
+/**
+ * Name of the dead-letter topic for a source topic, given the configured `topic` option.
+ *
+ * @example
+ * deadLetterTopicOf('orders.created') // 'orders.created.dlq'
+ * deadLetterTopicOf('orders.created', '.DLT') // 'orders.created.DLT'
+ */
+export function deadLetterTopicOf(
+  sourceTopic: string,
+  topic: string | ((sourceTopic: string) => string) = DEAD_LETTER_TOPIC_SUFFIX,
+): string {
+  return typeof topic === 'function' ? topic(sourceTopic) : `${sourceTopic}${topic}`;
+}
+
 /**
  * Header stamped by this transport on payloads it JSON-encoded. Receivers use it to decode
  * primitives (numbers, booleans, `null`) faithfully; services on the built-in kafkajs transport

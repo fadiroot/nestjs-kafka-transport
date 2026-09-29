@@ -6,6 +6,22 @@ By default the transport commits a record's offset **after** its handler finishe
 
 `consumer.autocommit: true` (or an interval in ms) switches to interval commits like kafkajs: faster, but a crash can lose in-flight records (**at-most-once** for those).
 
+### Manual commits
+
+`commitMode: 'manual'` hands the decision to the handler: nothing is committed unless it calls `ctx.commit()` on the `KafkaTransportContext` it received through `@Ctx()`. Use it when the offset must only move after a side effect succeeded, or when you want to batch commits yourself.
+
+```ts
+new KafkaTransportServer({ client, consumer, commitMode: 'manual' });
+
+@EventPattern('order.created')
+async created(@Payload() order: Order, @Ctx() ctx: KafkaTransportContext) {
+  await this.orders.save(order);
+  await ctx.commit(); // only after the write succeeded
+}
+```
+
+Records without a handler are still committed so the partition does not stall. A record whose handler returns (or fails) without committing stays uncommitted: after a restart or rebalance it is delivered again.
+
 ## Ordering
 
 Records of one partition are processed in order. `consumer.concurrency` only overlaps records from different partitions.
@@ -16,7 +32,52 @@ Throw `KafkaRetriableException` from a handler (or from an interceptor/filter) t
 
 Any other error is answered to the caller (requests) or logged (events), and the record is committed.
 
-Retry topics and dead-letter topics (`<topic>.retry.N`, `<topic>.dlq` with `kafka_dlt-*` headers) arrive in v0.2.
+## Dead-letter topics
+
+With `deadLetter` configured, a record that cannot be processed is copied to its dead-letter topic before its offset is committed, so nothing is lost and the partition keeps moving:
+
+```ts
+new KafkaTransportServer({
+  client,
+  consumer,
+  deadLetter: { topic: '.dlq', includeStackTrace: false }, // both are the defaults
+});
+```
+
+| Situation                                                        | Dead-lettered? | Caller / log                                |
+| ---------------------------------------------------------------- | -------------- | ------------------------------------------- |
+| event handler throws `KafkaRetriableException` until exhausted   | yes            | logged                                      |
+| event handler throws any other error                             | yes            | logged                                      |
+| request handler throws `KafkaRetriableException` until exhausted | yes            | no reply; caller gets `KafkaReplyLostError` |
+| request handler throws any other error                           | no             | answered with `kafka_nest-err`              |
+
+The dead letter keeps the original key, value and headers and adds the same headers Spring Kafka and `@nestjs/microservices` define (`KafkaHeaders.DLT_*`): `kafka_dlt-original-topic`, `-partition`, `-offset`, `-timestamp`, `kafka_dlt-exception-fqcn`, `kafka_dlt-exception-message`, `kafka_dlt-exception-stacktrace` (when `includeStackTrace` is on) and `kafka_deliveryAttempt`. `topic` accepts a suffix (default `.dlq`) or a function `(sourceTopic) => string`.
+
+What lands in the exception headers depends on what reaches the transport. Nest's RPC exception filter runs first: a `KafkaRetriableException` arrives as is (class name and message), an `RpcException` as the `{ status, message }` of its `getError()` (reported as `RpcError` with that message), and any other exception as `{ status: 'error', message: 'Internal server error' }` while the original is logged by `RpcExceptionsHandler`. Throw `RpcException` (or a subclass) with a descriptive error when the dead letter must explain itself. A failure to produce the dead letter is logged and the source record is still committed.
+
+Retry topics (`<topic>.retry.N` with delays) are planned; today retries are in-process with backoff.
+
+## Health checks
+
+`KafkaTransportHealthIndicator` reports a server or client for `@nestjs/terminus` (an optional peer dependency): `up` while the transport's last status is `connected` or `rebalancing`, `down` when it is `disconnected` or no status arrived within `timeout` (default 2 s). `probe: true` also fetches cluster metadata through the producer and reports the broker count.
+
+```ts
+@Controller('health')
+export class HealthController {
+  constructor(
+    private readonly health: HealthCheckService,
+    private readonly kafka: KafkaTransportHealthIndicator, // new KafkaTransportHealthIndicator(client)
+  ) {}
+
+  @Get()
+  @HealthCheck()
+  check() {
+    return this.health.check([() => this.kafka.isHealthy('kafka', { probe: true })]);
+  }
+}
+```
+
+When `@nestjs/terminus` is installed, an unhealthy check throws its `HealthCheckError`; otherwise a `KafkaTransportHealthError` with the same `causes`.
 
 ## Request-reply
 

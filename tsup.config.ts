@@ -13,6 +13,7 @@ export default defineConfig({
     '@nestjs/core',
     '@nestjs/microservices',
     '@platformatic/kafka',
+    '@nestjs/terminus',
     'rxjs',
     'reflect-metadata',
   ],
