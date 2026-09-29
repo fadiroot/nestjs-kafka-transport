@@ -67,7 +67,13 @@
     "@nestjs/core": "^10.0.0 || ^11.0.0",
     "@nestjs/microservices": "^10.0.0 || ^11.0.0",
     "@platformatic/kafka": "^2.12.0",
-    "rxjs": "^7.8.0"
+    "rxjs": "^7.8.0",
+    "@nestjs/terminus": "^10.0.0 || ^11.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@nestjs/terminus": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.1",

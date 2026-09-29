@@ -36,9 +36,9 @@ It is a **drop-in replacement** for the built-in Kafka transport: same decorator
 | Custom serializers / deserializers, Schema Registry passthrough                         | ✅                         | ✅                          |
 | Maintained client, Node 22/24, Kafka 3.x and 4.x (KRaft)                                | ❌                         | ✅                          |
 | Typed options, no `any` in the public API                                               | partial                    | ✅                          |
-| Retry policy with backoff, dead-letter topics (`kafka_dlt-*` headers)                   | ❌                         | v0.2                        |
-| Manual commits and at-least-once semantics                                              | partial                    | v0.2                        |
-| Terminus health indicator (broker reachability, consumer lag)                           | ❌                         | v0.2                        |
+| Retries with backoff, dead-letter topics (`kafka_dlt-*` headers)                        | ❌                         | ✅                          |
+| Per-record or manual commits (`ctx.commit()`), at-least-once semantics                  | partial                    | ✅                          |
+| Terminus health indicator (transport status, broker probe)                              | ❌                         | ✅                          |
 | Batch consumption with per-partition ordering                                           | ❌                         | v0.3                        |
 | Prometheus metrics, OpenTelemetry spans                                                 | ❌                         | v0.3                        |
 

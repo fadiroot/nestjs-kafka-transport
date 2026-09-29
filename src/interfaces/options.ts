@@ -78,6 +78,21 @@ export interface KafkaTransportOptions {
    */
   retriableDelay?: number;
   /**
+   * Server only: who commits offsets.
+   * - `'auto'`: the transport commits each record after its handler finished (default).
+   * - `'manual'`: nothing is committed unless the handler calls `ctx.commit()`. Records with no
+   *   handler are still committed so the partition does not stall.
+   * @defaultValue 'auto'
+   */
+  commitMode?: 'auto' | 'manual';
+  /**
+   * Server only: dead-letter topic settings. When set, a record whose handler exhausted its
+   * `KafkaRetriableException` retries, or an event whose handler threw any other error, is
+   * copied to the dead-letter topic with `kafka_dlt-*` headers before its offset is committed.
+   * Requests that fail with a non-retriable error are answered to the caller instead.
+   */
+  deadLetter?: KafkaDeadLetterOptions;
+  /**
    * Client only: deadline in milliseconds for the first reply of a `send()`. When it passes, the
    * request fails with `KafkaReplyLostError` (`reason: 'timeout'`). `send()` options can
    * override it per request. Unset: wait forever (apply RxJS `timeout()` yourself).
@@ -90,6 +105,20 @@ export interface KafkaTransportOptions {
    * generateOperationId: () => randomUUID()
    */
   generateOperationId?: () => string;
+}
+
+/** Dead-letter topic settings; see {@link KafkaTransportOptions.deadLetter}. */
+export interface KafkaDeadLetterOptions {
+  /**
+   * Name of the dead-letter topic for a source topic. A string is used as a suffix.
+   * @defaultValue '.dlq' (`orders.created` → `orders.created.dlq`)
+   */
+  topic?: string | ((sourceTopic: string) => string);
+  /**
+   * Include the error stack in the `kafka_dlt-exception-stacktrace` header.
+   * @defaultValue false
+   */
+  includeStackTrace?: boolean;
 }
 
 /** Per-request options of `KafkaTransportClient.send()`. */

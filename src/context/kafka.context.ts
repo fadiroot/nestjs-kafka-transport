@@ -1,6 +1,7 @@
 import { KafkaContext } from '@nestjs/microservices';
 import type { Consumer, Producer } from '@platformatic/kafka';
 
+import { KafkaTransportError } from '../errors.js';
 import { KafkaHeaders } from '../wire/headers.js';
 import type { ParsedKafkaRecord } from '../wire/parser.js';
 
@@ -37,6 +38,33 @@ type KafkaContextArgs = ConstructorParameters<typeof KafkaContext>[0];
  * }
  */
 export class KafkaTransportContext extends KafkaContext {
+  private commitRecord: (() => Promise<void>) | undefined;
+
+  /**
+   * Commits the offset of the current record. Meant for servers configured with
+   * `commitMode: 'manual'`; in `'auto'` mode the transport commits after the handler anyway.
+   * Rejects with `KafkaTransportError` when the record cannot be committed from this context.
+   *
+   * @example
+   * @EventPattern('order.created')
+   * async created(@Payload() order: Order, @Ctx() ctx: KafkaTransportContext) {
+   *   await this.orders.save(order);
+   *   await ctx.commit(); // at-least-once: only after the write succeeded
+   * }
+   */
+  public async commit(): Promise<void> {
+    if (!this.commitRecord) {
+      throw new KafkaTransportError('This record cannot be committed from its context');
+    }
+    await this.commitRecord();
+  }
+
+  /** @internal */
+  public withCommit(commit: () => Promise<void>): this {
+    this.commitRecord = commit;
+    return this;
+  }
+
   /**
    * Operation id stamped by the caller (`client.send(pattern, data, { operationId })` or the
    * client's `generateOperationId`), read from the `kafka_nest-operation-id` header. `undefined`
@@ -60,9 +88,11 @@ export function createKafkaContext(
   message: KafkaTransportMessage,
   consumer: TransportConsumer,
   producer: TransportProducer,
+  commit?: () => Promise<void>,
 ): KafkaTransportContext {
   // `@platformatic/kafka` heartbeats on its own; the callback exists for API compatibility.
   const heartbeat = (): Promise<void> => Promise.resolve();
   const args = [message, message.partition, message.topic, consumer, heartbeat, producer];
-  return new KafkaTransportContext(args as unknown as KafkaContextArgs);
+  const context = new KafkaTransportContext(args as unknown as KafkaContextArgs);
+  return commit ? context.withCommit(commit) : context;
 }
