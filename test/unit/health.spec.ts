@@ -24,6 +24,20 @@ function target(
   };
 }
 
+/**
+ * With `@nestjs/terminus` installed the indicator throws its `HealthCheckError`, otherwise
+ * `KafkaTransportHealthError`; both carry `causes`. Assert on whichever applies here.
+ */
+async function unhealthy(error: unknown): Promise<{ causes: Record<string, unknown> }> {
+  const terminus = await import('@nestjs/terminus').catch(() => null);
+  if (terminus) {
+    expect(error).toBeInstanceOf(terminus.HealthCheckError);
+  } else {
+    expect(error).toBeInstanceOf(KafkaTransportHealthError);
+  }
+  return error as { causes: Record<string, unknown> };
+}
+
 describe('KafkaTransportHealthIndicator', () => {
   it('reports up when the transport is connected', async () => {
     const indicator = new KafkaTransportHealthIndicator(target('connected'));
@@ -41,22 +55,18 @@ describe('KafkaTransportHealthIndicator', () => {
 
   it('fails with the causes when the transport is disconnected', async () => {
     const indicator = new KafkaTransportHealthIndicator(target('disconnected'));
-    const error = await indicator.isHealthy('bus').catch((e: unknown) => e);
-    // @nestjs/terminus is not installed here, so the fallback error carries the causes.
-    expect(error).toBeInstanceOf(KafkaTransportHealthError);
-    expect((error as KafkaTransportHealthError).causes).toEqual({
+    const error = await unhealthy(await indicator.isHealthy('bus').catch((e: unknown) => e));
+    expect(error.causes).toEqual({
       bus: { status: 'down', transport: 'disconnected', message: 'transport disconnected' },
     });
   });
 
   it('fails when no status arrives within the timeout', async () => {
     const indicator = new KafkaTransportHealthIndicator(target(undefined));
-    const error = await indicator.isHealthy('kafka', { timeout: 20 }).catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(KafkaTransportHealthError);
-    expect((error as KafkaTransportHealthError).causes.kafka).toMatchObject({
-      status: 'down',
-      transport: 'unknown',
-    });
+    const error = await unhealthy(
+      await indicator.isHealthy('kafka', { timeout: 20 }).catch((e: unknown) => e),
+    );
+    expect(error.causes.kafka).toMatchObject({ status: 'down', transport: 'unknown' });
   });
 
   it('probes the broker on request and reports the broker count', async () => {
