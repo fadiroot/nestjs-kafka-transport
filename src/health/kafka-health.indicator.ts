@@ -60,9 +60,11 @@ const DEFAULT_TIMEOUT = 2_000;
 /**
  * Health indicator for `@nestjs/terminus`, reporting whether a transport instance is connected.
  *
- * `@nestjs/terminus` is an optional peer dependency: when it is installed, an unhealthy check
- * throws its `HealthCheckError` so `HealthCheckService.check()` aggregates it; otherwise a
- * `KafkaTransportHealthError` with the same `causes` is thrown.
+ * `@nestjs/terminus` is an optional peer dependency and its version decides how an unhealthy
+ * check is reported, so `HealthCheckService.check()` aggregates it either way:
+ * - Terminus 11+: the `down` result is returned (the executor fails the check on `status`).
+ * - Terminus 10: its `HealthCheckError` is thrown, as that version expects.
+ * - Not installed: a `KafkaTransportHealthError` with the same `causes` is thrown.
  *
  * @example
  * @Controller('health')
@@ -94,7 +96,7 @@ export class KafkaTransportHealthIndicator {
     if (transport === 'disconnected' || transport === 'unknown') {
       details.status = 'down';
       details.message = transport === 'unknown' ? 'no status reported' : 'transport disconnected';
-      throw await this.failure(key, details);
+      return this.report(key, details);
     }
     if (options.probe) {
       try {
@@ -102,7 +104,7 @@ export class KafkaTransportHealthIndicator {
       } catch (error) {
         details.status = 'down';
         details.message = error instanceof Error ? error.message : String(error);
-        throw await this.failure(key, details);
+        return this.report(key, details);
       }
     }
     return { [key]: details };
@@ -135,18 +137,34 @@ export class KafkaTransportHealthIndicator {
     }
   }
 
-  protected async failure(key: string, details: KafkaHealthDetails): Promise<Error> {
+  /** Reports a `down` result the way the installed Terminus version expects (see class docs). */
+  protected async report(key: string, details: KafkaHealthDetails): Promise<KafkaHealthResult> {
     const causes: KafkaHealthResult = { [key]: details };
     const message = `${key} check failed: ${details.message ?? details.transport}`;
-    try {
-      // Resolved at runtime only: `@nestjs/terminus` is an optional peer dependency.
-      const specifier = '@nestjs/terminus';
-      const terminus = (await import(specifier)) as {
-        HealthCheckError: new (message: string, causes: unknown) => Error;
-      };
-      return new terminus.HealthCheckError(message, causes);
-    } catch {
-      return new KafkaTransportHealthError(message, causes);
+    const terminus = await loadTerminus();
+    if (terminus?.HealthIndicatorService) {
+      return causes;
     }
+    if (terminus?.HealthCheckError) {
+      throw new terminus.HealthCheckError(message, causes);
+    }
+    throw new KafkaTransportHealthError(message, causes);
+  }
+}
+
+interface TerminusModule {
+  /** Present from Terminus 11 on, which fails a check on a returned `down` result. */
+  HealthIndicatorService?: unknown;
+  /** Terminus 10's way of failing a check (deprecated in 11, removed later). */
+  HealthCheckError?: new (message: string, causes: unknown) => Error;
+}
+
+/** Resolved at runtime only: `@nestjs/terminus` is an optional peer dependency. */
+async function loadTerminus(): Promise<TerminusModule | null> {
+  try {
+    const specifier = '@nestjs/terminus';
+    return (await import(specifier)) as TerminusModule;
+  } catch {
+    return null;
   }
 }
