@@ -2,7 +2,9 @@
 
 **`No reply topic subscription for pattern "x"`** — call `client.subscribeToResponseOf('x')` before `connect()` for every pattern used with `send()`.
 
-**A request never resolves** — the reply topic exists but the client is not consuming it (not connected yet, or `producerOnlyMode`), or the server is not subscribed to the request topic (check `groupId` and that the service started after the topic existed for RegExp patterns).
+**A request never resolves** — the reply topic exists but the client is not consuming it (not connected yet, or `producerOnlyMode`), or the server is not subscribed to the request topic (check `groupId` and that the service started after the topic existed for RegExp patterns). Set `requestTimeout` (or `timeout` on the request) to get a `KafkaReplyLostError` instead of waiting forever.
+
+**`KafkaReplyLostError`** — the request was produced but its reply can no longer reach this client (`reason`: `rebalance`, `timeout`, `closed` or `disconnected`). The handler may have run: retry only with a stable `operationId` and an idempotent handler, see [delivery.md](./delivery.md#lost-replies-telling-not-executed-from-unknown).
 
 **`Unknown topic` at startup** — `client.autocreateTopics` is `false` and the topic does not exist. Create it, or leave auto-creation on in development.
 

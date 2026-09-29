@@ -41,6 +41,8 @@ describe('request-reply and events over @platformatic/kafka', () => {
       'math.stream',
       'math.fail',
       'math.sum.sync.regex.one',
+      'math.operation',
+      'math.slow',
     ]) {
       kafkaClient.subscribeToResponseOf(pattern);
     }
@@ -135,6 +137,26 @@ describe('request-reply and events over @platformatic/kafka', () => {
   it('re-runs an event handler that throws KafkaRetriableException', async () => {
     await lastValueFrom(c().emit('notify.retriable', { failUntil: 2 }));
     await expect.poll(() => received.events, { timeout: 10_000 }).toContainEqual({ retriable: 3 });
+  });
+
+  it('hands the operation id to the handler and keeps it identical across retries', async () => {
+    const send = () =>
+      firstValueFrom(
+        c().send<{ operationId: string | null }>('math.operation', {}, { operationId: 'op-42' }),
+      );
+    expect(await send()).toEqual({ operationId: 'op-42' });
+    expect(await send()).toEqual({ operationId: 'op-42' });
+    expect(await firstValueFrom(c().send('math.operation', {}))).toEqual({ operationId: null });
+  });
+
+  it('fails with KafkaReplyLostError when the reply misses the deadline', async () => {
+    await expect(
+      firstValueFrom(c().send('math.slow', { ms: 1_500 }, { timeout: 300 })),
+    ).rejects.toMatchObject({
+      name: 'KafkaReplyLostError',
+      reason: 'timeout',
+      pattern: 'math.slow',
+    });
   });
 
   it('exposes the underlying clients through unwrap()', () => {

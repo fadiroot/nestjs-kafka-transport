@@ -77,6 +77,33 @@ export interface KafkaTransportOptions {
    * @defaultValue 200
    */
   retriableDelay?: number;
+  /**
+   * Client only: deadline in milliseconds for the first reply of a `send()`. When it passes, the
+   * request fails with `KafkaReplyLostError` (`reason: 'timeout'`). `send()` options can
+   * override it per request. Unset: wait forever (apply RxJS `timeout()` yourself).
+   */
+  requestTimeout?: number;
+  /**
+   * Client only: generates the operation id stamped on requests that do not pass one in their
+   * `send()` options (`kafka_nest-operation-id` header). Unset: no header unless provided.
+   * @example
+   * generateOperationId: () => randomUUID()
+   */
+  generateOperationId?: () => string;
+}
+
+/** Per-request options of `KafkaTransportClient.send()`. */
+export interface KafkaSendOptions {
+  /**
+   * Key of the logical operation, sent as the `kafka_nest-operation-id` header. Reuse the same
+   * value when retrying after a `KafkaReplyLostError` so the handler can deduplicate
+   * (`ctx.getOperationId()`); each attempt still gets its own correlation id.
+   */
+  operationId?: string;
+  /**
+   * Deadline in milliseconds for the first reply; overrides `requestTimeout`. `0` disables it.
+   */
+  timeout?: number;
 }
 
 /** Statuses emitted on `server.status` / `client.status`. */
