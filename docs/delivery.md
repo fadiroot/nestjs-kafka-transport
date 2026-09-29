@@ -77,7 +77,7 @@ export class HealthController {
 }
 ```
 
-When `@nestjs/terminus` is installed, an unhealthy check throws its `HealthCheckError`; otherwise a `KafkaTransportHealthError` with the same `causes`.
+An unhealthy check is reported the way the installed Terminus expects, so `HealthCheckService.check()` fails either way: Terminus 11+ gets the `down` result back, Terminus 10 gets its `HealthCheckError` thrown, and without Terminus a `KafkaTransportHealthError` carrying the same `causes` is thrown.
 
 ## Request-reply
 
