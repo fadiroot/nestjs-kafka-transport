@@ -20,6 +20,58 @@ export class KafkaReplyTopicNotSubscribedError extends KafkaTransportError {
   }
 }
 
+/** Why a reply stopped being awaited; see {@link KafkaReplyLostError}. */
+export type KafkaReplyLostReason = 'rebalance' | 'timeout' | 'closed' | 'disconnected';
+
+/**
+ * The request was produced but its reply can no longer reach this client, so the outcome is
+ * **unknown**: the handler may or may not have run. Raised when the reply partition was taken
+ * away by a rebalance, the request deadline passed, or the client closed / lost its reply stream
+ * while waiting.
+ *
+ * Every other error coming out of `send()` means the request never left, so retrying it is safe.
+ * Before retrying after this one, make the handler idempotent with an operation id:
+ *
+ * @example
+ * try {
+ *   return await firstValueFrom(client.send('order.pay', order, { operationId, timeout: 5000 }));
+ * } catch (error) {
+ *   if (error instanceof KafkaReplyLostError) {
+ *     // same operationId on the retry lets the handler detect the duplicate
+ *     return await firstValueFrom(client.send('order.pay', order, { operationId }));
+ *   }
+ *   throw error;
+ * }
+ */
+export class KafkaReplyLostError extends KafkaTransportError {
+  public override readonly name = 'KafkaReplyLostError';
+
+  constructor(
+    public readonly pattern: string,
+    public readonly reason: KafkaReplyLostReason,
+    public readonly correlationId: string,
+    public readonly operationId?: string,
+  ) {
+    super(
+      `Reply for pattern "${pattern}" (correlation ${correlationId}) was lost: ${describeReason(reason)}. ` +
+        'The outcome is unknown; the handler may have run.',
+    );
+  }
+}
+
+function describeReason(reason: KafkaReplyLostReason): string {
+  switch (reason) {
+    case 'rebalance':
+      return 'the reply partition was reassigned to another client instance';
+    case 'timeout':
+      return 'no reply arrived before the deadline';
+    case 'closed':
+      return 'the client was closed while waiting';
+    case 'disconnected':
+      return 'the reply stream failed while waiting';
+  }
+}
+
 /** Rejects a reply that carries an error header; mirrors the built-in transport's behaviour. */
 export class KafkaRemoteHandlerError extends KafkaTransportError {
   public override readonly name = 'KafkaRemoteHandlerError';

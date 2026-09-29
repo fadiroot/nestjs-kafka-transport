@@ -19,6 +19,12 @@ export const KafkaHeaders = {
   NEST_ERR: 'kafka_nest-err',
   /** Marks the last reply of an observable response stream. */
   NEST_IS_DISPOSED: 'kafka_nest-is-disposed',
+  /**
+   * Application-level key of the logical operation behind a request. Unlike the correlation id
+   * it stays the same when the caller retries, so handlers can deduplicate. Specific to this
+   * transport: the built-in kafkajs transport ignores it.
+   */
+  OPERATION_ID: 'kafka_nest-operation-id',
   /** Number of the delivery attempt, set by the retry pipeline. */
   DELIVERY_ATTEMPT: 'kafka_deliveryAttempt',
   /** Dead-letter metadata (same names as Spring Kafka's `kafka_dlt-*` headers). */

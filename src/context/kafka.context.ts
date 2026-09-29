@@ -1,6 +1,7 @@
 import { KafkaContext } from '@nestjs/microservices';
 import type { Consumer, Producer } from '@platformatic/kafka';
 
+import { KafkaHeaders } from '../wire/headers.js';
 import type { ParsedKafkaRecord } from '../wire/parser.js';
 
 /** Consumer type as instantiated by this transport (buffers in, string header names). */
@@ -21,17 +22,47 @@ export type KafkaTransportMessage<TValue = unknown, TKey = unknown> = ParsedKafk
 type KafkaContextArgs = ConstructorParameters<typeof KafkaContext>[0];
 
 /**
- * Builds the `KafkaContext` handlers receive through `@Ctx()`. The class is the one exported by
- * `@nestjs/microservices`, so existing handlers typed against it keep compiling; the consumer and
- * producer returned by `getConsumer()` / `getProducer()` are the `@platformatic/kafka` instances.
+ * The context handlers receive through `@Ctx()`. It is the `KafkaContext` of
+ * `@nestjs/microservices` (handlers typed against it keep compiling) plus this transport's
+ * extras.
+ *
+ * @example
+ * @MessagePattern('order.pay')
+ * async pay(@Payload() order: Order, @Ctx() ctx: KafkaTransportContext) {
+ *   const operationId = ctx.getOperationId(); // same value on every retry of one payment
+ *   if (operationId && (await this.payments.alreadyDone(operationId))) {
+ *     return this.payments.resultOf(operationId);
+ *   }
+ *   // ...
+ * }
+ */
+export class KafkaTransportContext extends KafkaContext {
+  /**
+   * Operation id stamped by the caller (`client.send(pattern, data, { operationId })` or the
+   * client's `generateOperationId`), read from the `kafka_nest-operation-id` header. `undefined`
+   * when the request carries none (events, callers on the built-in transport).
+   */
+  public getOperationId(): string | undefined {
+    const message = this.getMessage() as unknown as KafkaTransportMessage;
+    const value = message.headers[KafkaHeaders.OPERATION_ID];
+    if (value === undefined) {
+      return undefined;
+    }
+    return Buffer.isBuffer(value) ? value.toString('utf8') : value;
+  }
+}
+
+/**
+ * Builds the context handlers receive through `@Ctx()`. The consumer and producer returned by
+ * `getConsumer()` / `getProducer()` are the `@platformatic/kafka` instances.
  */
 export function createKafkaContext(
   message: KafkaTransportMessage,
   consumer: TransportConsumer,
   producer: TransportProducer,
-): KafkaContext {
+): KafkaTransportContext {
   // `@platformatic/kafka` heartbeats on its own; the callback exists for API compatibility.
   const heartbeat = (): Promise<void> => Promise.resolve();
   const args = [message, message.partition, message.topic, consumer, heartbeat, producer];
-  return new KafkaContext(args as unknown as KafkaContextArgs);
+  return new KafkaTransportContext(args as unknown as KafkaContextArgs);
 }
