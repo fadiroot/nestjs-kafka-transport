@@ -47,7 +47,7 @@
   },
   "packageManager": "pnpm@10.34.5",
   "scripts": {
-    "build": "node api.js && tsup",
+    "build": "tsup",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
