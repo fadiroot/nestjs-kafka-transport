@@ -8,6 +8,3 @@ docs/api/
 .DS_Store
 .pnpm-store/
 .env
-branch_structure.json
-temp_auto_push.bat
-temp_interactive_push.bat
